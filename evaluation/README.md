@@ -4,6 +4,7 @@
 + `data/`
   + `data/measurements-e2e/` contains the unaltered data and artifacts for E2E
   + `data/measurements-p2p/` contains the unaltered data and artifacts for P2P
+  + `data/measurements-residence/` contains the unaltered data and artifacts for the residence measurements
   + `data/measurements-tc/` contains the unaltered data and artifacts for TC
 + `scripts/`
   + `scripts/clean.py` is the script used for cleaning the data from the measurements. **Use this before running `stats.py` or `plots.py`**
