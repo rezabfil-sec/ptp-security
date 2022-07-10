@@ -1,0 +1,127 @@
+# HMAC-SHA-512-256
+[[security_associations]]
+key = "09fd8600e348aca0ce0dab206446ba3264760b23a2edd7fb844aee905b61e8c9"
+key_id = 0x12A5
+key_len = 32
+hash_algo = 0x0
+hash_len = 32
+
+# Blake2b
+[[security_associations]]
+key = "dab2a3206b647615aaa8fa0b2380e3a12a90ce44002edeef790bfb5844a6fe8c0"
+key_id = 0x2B0B
+key_len = 32
+hash_algo = 0x1
+hash_len = 32
+
+# Blake3
+[[security_associations]]
+key = "ff476c12fbfaa061f58a0e390ceda4b6fe84002edf7fb84ec0e905c32aa8b234a"
+key_id = 0xB3
+key_len = 32
+hash_algo = 0x2
+hash_len = 32 # BLAKE3_OUT_LEN
+
+# Dummy1 - A
+[[security_associations]]
+key = "0123456789"
+key_id = 0x0AA0
+key_len = 32
+hash_algo = 0x3
+hash_len = 32
+
+# Dummy2 - A
+[[security_associations]]
+key = "0123456789"
+key_id = 0x0BB0
+key_len = 32
+hash_algo = 0x4
+hash_len = 32
+
+# Dummy3 - A
+[[security_associations]]
+key = "0123456789"
+key_id = 0x0CC0
+key_len = 32
+hash_algo = 0x5
+hash_len = 32
+
+# Dummy1 - C
+[[security_associations]]
+key = "0123456789"
+key_id = 0xAAAA
+key_len = 32
+hash_algo = 0x6
+hash_len = 32
+
+# Dummy2 - C
+[[security_associations]]
+key = "0123456789"
+key_id = 0xBBBB
+key_len = 32
+hash_algo = 0x7
+hash_len = 32
+
+# Dummy3 - C
+[[security_associations]]
+key = "0123456789"
+key_id = 0xCCCC
+key_len = 32
+hash_algo = 0x8
+hash_len = 32
+
+# Dummy1 - Both
+[[security_associations]]
+key = "0123456789"
+key_id = 0x0AB0
+key_len = 32
+hash_algo = 0x9
+hash_len = 32
+
+# Dummy2 - Both
+[[security_associations]]
+key = "0123456789"
+key_id = 0x0AC0
+key_len = 32
+hash_algo = 0xA
+hash_len = 32
+
+# Dummy3 - Both
+[[security_associations]]
+key = "0123456789"
+key_id = 0x0AD0
+key_len = 32
+hash_algo = 0xB
+hash_len = 32
+
+# Dummy1 - Both & Random
+[[security_associations]]
+key = "0123456789"
+key_id = 0x01B0
+key_len = 32
+hash_algo = 0xC
+hash_len = 32
+
+# Dummy2 - Both & Random
+[[security_associations]]
+key = "0123456789"
+key_id = 0x02B0
+key_len = 32
+hash_algo = 0xD
+hash_len = 32
+
+# Dummy3 - Both & Random
+[[security_associations]]
+key = "0123456789"
+key_id = 0x03B0
+key_len = 32
+hash_algo = 0xE
+hash_len = 32
+
+# Dummy4 - Both & Random
+[[security_associations]]
+key = "0123456789"
+key_id = 0x04B0
+key_len = 32
+hash_algo = 0xF
+hash_len = 32
