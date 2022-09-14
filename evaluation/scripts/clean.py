@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 
 # ------------------ ADJUST ME ------------------
 repo_path = "/path/to/repo/ptp-security"
-DEBUG = False # set to True to see the effects of the data cleaning
+DEBUG = False  # set to True to see the effects of the data cleaning
 # -----------------------------------------------
 
 file_path = "/node-6_abe/phc_cmp_processed.out"
@@ -18,28 +18,45 @@ hops = {
         {'num': 7, 'seq': 4},
         {'num': 8, 'seq': 9},
         {'num': 9, 'seq': 14},
-    ],
-    'p2p': [
+    ], 'p2p': [
         {'num': 4, 'seq': 0},
         {'num': 5, 'seq': 5},
         {'num': 6, 'seq': 10},
         {'num': 7, 'seq': 15},
         {'num': 8, 'seq': 20},
         {'num': 9, 'seq': 25},
-    ],
-    'tc': [
+    ], 'tc': [
         {'num': 4, 'seq': 0},
         {'num': 5, 'seq': 1},
         {'num': 6, 'seq': 0},
         {'num': 7, 'seq': 4},
         {'num': 8, 'seq': 9},
         {'num': 9, 'seq': 14},
-    ],
+    ], 'logSync-e2e': [
+        {'num': 7, 'seq': 0},
+        {'num': 6, 'seq': 0},
+        {'num': 5, 'seq': 0},
+        {'num': 4, 'seq': 0},
+        {'num': 3, 'seq': 0},
+        {'num': 2, 'seq': 0},
+        {'num': 1, 'seq': 0},
+        {'num': 0, 'seq': 0},
+    ], 'logSync-tc': [
+        {'num': 7, 'seq': 5},
+        {'num': 6, 'seq': 15},
+        {'num': 5, 'seq': 10},
+        {'num': 4, 'seq': 5},
+        {'num': 3, 'seq': 0},
+        {'num': 2, 'seq': 0},
+        {'num': 1, 'seq': 2},
+        {'num': 0, 'seq': 0},
+    ]
 }
 
-types = ['e2e', 'p2p', 'tc']
+main_experiments = ['e2e', 'p2p', 'tc']
+logSync_experiments = ['logSync-e2e', 'logSync-tc']
 
-algos = [   
+algos = [
     {'path': 'nosec', 'name': 'No Security'},
     {'path': 'hmacsha512256', 'name': 'HMAC-SHA-512-256'},
     {'path': 'blake2b', 'name': 'Blake2b'},
@@ -47,18 +64,26 @@ algos = [
     {'path': 'dummyr1ac', 'name': 'Dummy'},
 ]
 
-def get_path(hops, measurement, algo, meas_type):
+
+def get_path(hops, measurement, algo, meas_type, subdir=''):
     return f"{repo_path}/evaluation/data/measurements-{meas_type}/" + \
-        f"{hops}-hops/{measurement}_net-m-{hops}_stack-maggie-gm-{hops}-hops_action-1_{algo}" + \
+        f"{hops}-hops/{subdir}/{measurement}_net-m-{hops}_stack-maggie-gm-{hops}-hops_action-1_{algo}" + \
         file_path
 
-def get_path_out(hops, measurement, algo, meas_type):
+
+def get_path_out(hops, measurement, algo, meas_type, subdir=''):
     return f"{repo_path}/evaluation/data/measurements-{meas_type}-cleaned/" + \
-        f"{hops}-hops/{measurement}_net-m-{hops}_stack-maggie-gm-{hops}-hops_action-1_{algo}" + \
+        f"{hops}-hops/{subdir}/{measurement}_net-m-{hops}_stack-maggie-gm-{hops}-hops_action-1_{algo}" + \
         file_path
+
 
 def get_vals(hops, measurement, algo, meas_type):
     return np.loadtxt(open(get_path(hops, measurement, algo, meas_type)), skiprows=1)
+
+
+def get_vals_logsync(hops, measurement, algo, meas_type, subdir=''):
+    return np.loadtxt(open(get_path(hops, measurement, algo, meas_type, subdir)), skiprows=1)
+
 
 def get_quartile_set(x, constant=1.5):
     upper_quartile = np.percentile(x, 75)
@@ -66,26 +91,29 @@ def get_quartile_set(x, constant=1.5):
     IQR = (upper_quartile - lower_quartile) * constant
     return (lower_quartile - IQR, upper_quartile + IQR)
 
+
 def out_of_bounds_within(quartile_set, arr):
     for val in arr.tolist():
         if val >= quartile_set[0] and val <= quartile_set[1]:
             return False
-    
+
     return True
+
 
 def find_out_of_bounds_end(quartile_set, arr, start):
     for i, val in enumerate(arr[start:].tolist(), start):
         if val >= quartile_set[0] and val <= quartile_set[1]:
             return i
-    
+
     return len(arr) - 1
+
 
 def detect_outliers(quartile_set, arr, start, range=1200, grace=1000):
     outliers = []
 
     for i, val in enumerate(arr[start:].tolist(), start):
         if not (val >= quartile_set[0] and val <= quartile_set[1]) \
-        and out_of_bounds_within(quartile_set, arr[i : (i + range)]):
+                and out_of_bounds_within(quartile_set, arr[i: (i + range)]):
             if i < grace:
                 start = 0
             else:
@@ -95,9 +123,9 @@ def detect_outliers(quartile_set, arr, start, range=1200, grace=1000):
             outliers += [(start, end)]
             outliers += detect_outliers(quartile_set, arr, end + 1)
             return outliers
-    
+
     return outliers
-    
+
 
 def remove_intervals_from_list(list, outliers):
     new = []
@@ -108,7 +136,7 @@ def remove_intervals_from_list(list, outliers):
         cont = o[1]
 
     new += list[cont:]
-    return new 
+    return new
 
 
 def visualize(vals, qs, outliers):
@@ -120,9 +148,13 @@ def visualize(vals, qs, outliers):
         graph.axvspan(o[0], o[1], color='g', alpha=0.25)
     plt.show()
 
+
 removed = []
 
-for meas_type in types:
+# ================================================================================
+# Main experiment cleaning (e2e, p2p, tc)
+# ================================================================================
+for meas_type in main_experiments:
     print(f'Cleaning {meas_type} values..')
 
     # first iteration: find out how much we truncate
@@ -141,13 +173,15 @@ for meas_type in types:
             print(f"Removing {total} dp for {al['name']} / {hop['num']} hops")
             removed.append(total)
             seq += 1
-            
+
             if DEBUG:
                 visualize(vals, qs, outliers)
 
     truncation = 450000 - round(max(removed), -3)
+    
     print(f"Min removed: {min(removed)}, Max removed: {max(removed)} | Truncation for {meas_type}: {truncation}")
     print(f'Storing cleaned data for {meas_type}. This might take a while..')
+
     # second iteration: write out cleaned, truncated data
     for hop in hops[meas_type]:
         seq = hop['seq']
@@ -167,5 +201,55 @@ for meas_type in types:
             path = get_path_out(hop['num'], seq, al['path'], meas_type)
             os.makedirs(os.path.dirname(path), exist_ok=False)
             with open(path, 'w+') as f:
-                np.savetxt(f, vals, delimiter="\n", header=f"Truncated to {truncation} values", fmt="%s")
+                np.savetxt(f, vals, delimiter="\n",
+                           header=f"Truncated to {truncation} values", fmt="%s")
             seq += 1
+
+# ================================================================================
+# logSync experiment cleaning
+# ================================================================================
+for meas_type in logSync_experiments:
+    print(f'Cleaning {meas_type} values..')
+
+    for ls in hops[meas_type]:
+        for i, al in enumerate(algos):
+            vals = get_vals_logsync(9, ls['seq'] + i, f'logSync{ls["num"]}-{al["path"]}', meas_type, f'logSync{ls["num"]}')
+
+            qs = get_quartile_set(vals)
+            outliers = detect_outliers(qs, vals, 0)
+            total = 0
+
+            for o in outliers:
+                total += o[1] - o[0]
+
+            print(f"Removing {total} dp for {meas_type}{ls['num']}-{al['path']}")
+            removed.append(total)
+
+            if DEBUG:
+                visualize(vals, qs, outliers)
+
+    truncation = 450000 - round(max(removed), -3)
+
+    print(f"Min removed: {min(removed)}, Max removed: {max(removed)} | Truncation for logSync: {truncation}")
+    print(f'Storing cleaned data for {meas_type}. This might take a while..')
+
+    for ls in hops[meas_type]:
+        for i, al in enumerate(algos):
+            vals = get_vals_logsync(9, ls['seq'] + i, f'logSync{ls["num"]}-{al["path"]}', meas_type, f'logSync{ls["num"]}')
+
+            qs = get_quartile_set(vals)
+            outliers = detect_outliers(qs, vals, 0)
+
+            # remove outliers
+            vals = remove_intervals_from_list(vals.tolist(), outliers)
+
+            # truncate
+            vals = vals[0:truncation]
+
+            if DEBUG:
+                visualize(vals, qs, [])
+
+            path = get_path_out(9, ls['seq'] + i, f'logSync{ls["num"]}-{al["path"]}', meas_type, f'logSync{ls["num"]}')
+            os.makedirs(os.path.dirname(path), exist_ok=False)
+            with open(path, 'w+') as f:
+                np.savetxt(f, vals, delimiter="\n", header=f"Truncated to {truncation} values", fmt="%s")

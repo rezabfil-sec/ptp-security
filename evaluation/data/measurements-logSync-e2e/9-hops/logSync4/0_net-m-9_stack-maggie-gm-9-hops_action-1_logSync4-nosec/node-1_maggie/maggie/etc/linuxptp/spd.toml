@@ -1,0 +1,41 @@
+# Security Policy Database for Prong A
+
+[SYNC]
+spp_immediate = 0x01
+spp_delayed = 0xFF
+
+[DELAY_REQ]
+spp_immediate = 0x01
+spp_delayed = 0xFF
+
+[PDELAY_REQ]
+spp_immediate = 0x01
+spp_delayed = 0xFF
+
+[PDELAY_RESP]
+spp_immediate = 0x01
+spp_delayed = 0xFF
+
+[FOLLOW_UP]
+spp_immediate = 0x01
+spp_delayed = 0xFF
+
+[DELAY_RESP]
+spp_immediate = 0x01
+spp_delayed = 0xFF
+
+[PDELAY_RESP_FOLLOW_UP]
+spp_immediate = 0x01
+spp_delayed = 0xFF
+
+[ANNOUNCE]
+spp_immediate = 0x01
+spp_delayed = 0xFF
+
+[SIGNALING]
+spp_immediate = 0x01
+spp_delayed = 0xFF
+
+[MANAGEMENT]
+spp_immediate = 0xFF
+spp_delayed = 0xFF

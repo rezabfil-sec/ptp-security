@@ -6,7 +6,8 @@ import matplotlib.pyplot as plt
 
 # ------------------ ADJUST ME ------------------
 repo_path = "/path/to/repo/ptp-security"
-generate_png = True # set to True to output the plots as png instead of pgf
+generate_png = True  # set to True to output the plots as png instead of pgf
+use_log_scale = False  # set to True to output the stddev plots with a logarithmic scale
 # -----------------------------------------------
 
 meas_path = "/node-6_abe/phc_cmp_processed.out"
@@ -39,12 +40,31 @@ hops = {
         {'num': 9, 'seq': 14},
     ], 'residence': [
         {'num': 2, 'seq': 0, 'xlim_fact': (7, 10)}
+    ], 'logSync-e2e': [
+        {'num': 7, 'seq': 0},
+        {'num': 6, 'seq': 0},
+        {'num': 5, 'seq': 0},
+        {'num': 4, 'seq': 0},
+        {'num': 3, 'seq': 0},
+        {'num': 2, 'seq': 0},
+        {'num': 1, 'seq': 0},
+        {'num': 0, 'seq': 0},
+    ], 'logSync-tc': [
+        {'num': 7, 'seq': 5},
+        {'num': 6, 'seq': 15},
+        {'num': 5, 'seq': 10},
+        {'num': 4, 'seq': 5},
+        {'num': 3, 'seq': 0},
+        {'num': 2, 'seq': 0},
+        {'num': 1, 'seq': 2},
+        {'num': 0, 'seq': 0},
     ]
 }
 
-types = ['e2e', 'p2p', 'tc']
+main_experiments = ['e2e', 'p2p', 'tc']
+logSync_experiments = ['logSync-e2e', 'logSync-tc']
 
-algos = [   
+algos = [
     {'path': 'nosec', 'name': 'No Security'},
     {'path': 'hmacsha512256', 'name': 'HMAC-SHA-512-256'},
     {'path': 'blake2b', 'name': 'Blake2b'},
@@ -56,36 +76,58 @@ rel_path = repo_path + "/evaluation/data/reliability/"
 rel_vals_lisa = np.loadtxt(open(rel_path + 'lisa_reliability_processed.out'))
 rel_vals_abe = np.loadtxt(open(rel_path + 'abe_reliability_processed.out'))
 
-def get_path_unclean(hops, measurement, algo, meas_type, file_path):
+
+def get_path_unclean(hops, measurement, algo, meas_type, file_path, subdir=''):
     return f"{repo_path}/evaluation/data/measurements-{meas_type}/" + \
-        f"{hops}-hops/{measurement}_net-m-{hops}_stack-maggie-gm-{hops}-hops_action-1_{algo}" + \
+        f"{hops}-hops/{subdir}/{measurement}_net-m-{hops}_stack-maggie-gm-{hops}-hops_action-1_{algo}" + \
         file_path
 
-def get_path_clean(hops, measurement, algo, meas_type, file_path):
+
+def get_path_clean(hops, measurement, algo, meas_type, file_path, subdir=''):
     return f"{repo_path}/evaluation/data/measurements-{meas_type}-cleaned/" + \
-        f"{hops}-hops/{measurement}_net-m-{hops}_stack-maggie-gm-{hops}-hops_action-1_{algo}" + \
+        f"{hops}-hops/{subdir}/{measurement}_net-m-{hops}_stack-maggie-gm-{hops}-hops_action-1_{algo}" + \
         file_path
+
 
 def get_residence(hops, measurement, algo):
-    return np.loadtxt(open(get_path_unclean(hops, measurement, algo, 'residence', residence_path))) / 1000 # adjusted to us
+    # adjusted to us
+    return np.loadtxt(open(get_path_unclean(hops, measurement, algo, 'residence', residence_path))) / 1000
+
 
 def get_vals(hops, measurement, algo, meas_type):
     return np.loadtxt(open(get_path_unclean(hops, measurement, algo, meas_type, meas_path)), skiprows=1)
 
+
 def get_vals_clean(hops, measurement, algo, meas_type):
     return np.loadtxt(open(get_path_clean(hops, measurement, algo, meas_type, meas_path)), skiprows=1)
 
-def set_plt_config(sz=(4,4)):
-        plt.figure(figsize=sz)
-        # plt.style.use('seaborn')
-        plt.rc('text', usetex=True)
-        plt.rc('text.latex', preamble=r'\usepackage{amsmath}')
-        plt.rcParams.update({
-                "font.family": "serif",
-                "font.size": 12,
-                "text.usetex": True,
-                "pgf.rcfonts": False
-        })
+
+def get_vals_clean_logsync(hops, measurement, algo, meas_type, subdir=''):
+    return np.loadtxt(open(get_path_clean(hops, measurement, algo, meas_type, meas_path, subdir)), skiprows=1)
+
+
+def set_plt_config(sz=(4, 4), meas_type=''):
+    if meas_type == 'e2e' or meas_type == 'p2p':
+        plt.ylim((100, 600))
+
+    plt.figure(figsize=sz)
+    # plt.style.use('seaborn')
+    plt.rc('text', usetex=True)
+    plt.rc('text.latex', preamble=r'\usepackage{amsmath}')
+    plt.rcParams.update({
+        "font.family": "serif",
+        "font.size": 16,
+        "text.usetex": True,
+        "pgf.rcfonts": False
+    })
+
+
+def get_naive_formatter():
+    def _formatter(x, pos):
+        return x
+
+    return plt.FuncFormatter(_formatter)
+
 
 # from https://stackoverflow.com/a/52921726
 def fix_hist_step_vertical_line_at_end(ax):
@@ -95,6 +137,8 @@ def fix_hist_step_vertical_line_at_end(ax):
         poly.set_xy(poly.get_xy()[:-1])
 
 # from https://jwalton.info/Matplotlib-latex-PGF/
+
+
 def set_size(width_pt, fraction=1, subplots=(1, 1)):
     """Set figure dimensions to sit nicely in our document.
 
@@ -126,13 +170,14 @@ def set_size(width_pt, fraction=1, subplots=(1, 1)):
 
     return (fig_width_in, fig_height_in)
 
+
 if not generate_png:
     mpl.use('pgf')
 
 # ---------------------------------------------------------------------------------------------------------------------------
 # Reliability line plot pic:plot:reliability
 # ---------------------------------------------------------------------------------------------------------------------------
-set_plt_config(sz=(8,2))
+set_plt_config(sz=(8, 2))
 ax = sns.lineplot()
 abe, = ax.plot(rel_vals_abe, label='abe', linewidth=0.35)
 lisa, = ax.plot(rel_vals_lisa, label='lisa', linewidth=0.35)
@@ -142,9 +187,9 @@ ax.set_ylabel('Offset (ns)')
 ax.grid(True)
 
 if generate_png:
-    plt.savefig(f'./reliability.png', bbox_inches = "tight")
+    plt.savefig(f'./reliability.png', bbox_inches="tight")
 else:
-    plt.savefig(f'./reliability.pgf', format='pgf', bbox_inches = "tight")
+    plt.savefig(f'./reliability.pgf', format='pgf', bbox_inches="tight")
 
 plt.clf()
 # ---------------------------------------------------------------------------------------------------------------------------
@@ -152,7 +197,7 @@ plt.clf()
 # ---------------------------------------------------------------------------------------------------------------------------
 # Line plot for stddev pic:plot:line-stddev-{meas-type}
 # ---------------------------------------------------------------------------------------------------------------------------
-for meas_type in types:
+for meas_type in main_experiments:
     x = []
     std_devs = []
     label = []
@@ -163,7 +208,8 @@ for meas_type in types:
     for i, al in enumerate(algos):
         al['std'] = []
         for hop in hops[meas_type]:
-            vals = get_vals_clean(hop['num'], hop['seq'] + i, al['path'], meas_type)
+            vals = get_vals_clean(
+                hop['num'], hop['seq'] + i, al['path'], meas_type)
             std = np.round(np.std(vals), round_to)
             al['std'].append(std)
 
@@ -172,17 +218,25 @@ for meas_type in types:
     set_plt_config(sz=(5, 3))
     ax = sns.lineplot(data=std_devs, linewidth=0.9, markers=True)
     ax.legend(label, prop={'size': 11})
-    ax.set_xticks([0,1,2,3,4,5])
-    ax.set_xticklabels([4,5,6,7,8,9])
+    ax.set_xticks([0, 1, 2, 3, 4, 5])
+    ax.set_xticklabels([4, 5, 6, 7, 8, 9])
+
+    if use_log_scale:
+        ax.set_yscale('log')
+        ax.set_yticks([100, 200, 300, 400, 500, 600])
+        ax.yaxis.set_major_formatter(get_naive_formatter())
+        ax.yaxis.set_minor_formatter(get_naive_formatter())
+
     ax.set_xlabel('Number of hops')
     ax.set_ylabel('Standard Deviation (ns)')
     ax.grid(True)
 
     if generate_png:
-        plt.savefig(f'./line-stddev-{meas_type}.png', bbox_inches = "tight")
+        plt.savefig(f'./line-stddev-{meas_type}.png', bbox_inches="tight")
     else:
-        plt.savefig(f'./line-stddev-{meas_type}.pgf', format='pgf', bbox_inches = "tight")
-        
+        plt.savefig(f'./line-stddev-{meas_type}.pgf',
+                    format='pgf', bbox_inches="tight")
+
 plt.clf()
 # ---------------------------------------------------------------------------------------------------------------------------
 
@@ -195,7 +249,8 @@ fig, ax = plt.subplots(figsize=sz)
 
 hop = hops['residence'][0]
 for i, alg in enumerate(algos):
-    ax.hist(get_residence(hop['num'], hop['seq'] + i, alg['path']), 45000, density=True, histtype='step', cumulative=True, label=alg['name'], lw=1.2)
+    ax.hist(get_residence(hop['num'], hop['seq'] + i, alg['path']), 45000,
+            density=True, histtype='step', cumulative=True, label=alg['name'], lw=1.2)
 
 fix_hist_step_vertical_line_at_end(ax)
 ax.grid(True)
@@ -210,5 +265,77 @@ if generate_png:
 else:
     plt.savefig('./residence-cdf.pgf',
                 format='pgf', bbox_inches="tight")
+plt.clf()
+# ---------------------------------------------------------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------------------------------------------------------
+# Line plot for stddev pic:plot:line-stddev-logsync
+# ---------------------------------------------------------------------------------------------------------------------------
+std_devs_e2e = []
+std_devs_e2etc = []
+
+ticks = [0, 1, 2, 3, 4, 5, 6, 7]
+tick_labels = [-7, -6, -5, -4, -3, -2, -1, 0]
+
+legend = []
+
+for i, al in enumerate(algos):
+    legend.append(al['name'])
+
+meas_type = 'logSync-e2e'
+for i, al in enumerate(algos):
+    al['std'] = []
+
+    for ls in hops[meas_type]:
+        vals = get_vals_clean_logsync(
+            9, ls['seq'] + i, f'logSync{ls["num"]}-{al["path"]}', meas_type, f'logSync{ls["num"]}')
+        std = np.round(np.std(vals), round_to)
+        al['std'].append(std)
+
+    std_devs_e2e.append(al['std'])
+
+meas_type = 'logSync-tc'
+for i, al in enumerate(algos):
+    al['std'] = []
+
+    for ls in hops[meas_type]:
+        vals = get_vals_clean_logsync(
+            9, ls['seq'] + i, f'logSync{ls["num"]}-{al["path"]}', meas_type, f'logSync{ls["num"]}')
+        std = np.round(np.std(vals), round_to)
+        al['std'].append(std)
+
+    std_devs_e2etc.append(al['std'])
+
+set_plt_config(sz=(5, 3))
+ax = sns.lineplot(data=std_devs_e2e, linewidth=0.9, markers=True, palette=[
+                  'tab:blue', 'tab:blue', 'tab:blue', 'tab:blue', 'tab:blue'])
+ax = sns.lineplot(data=std_devs_e2etc, linewidth=0.9, markers=True, palette=[
+                  'tab:orange', 'tab:orange', 'tab:orange', 'tab:orange', 'tab:orange'])
+ax.legend(legend, prop={'size': 11})
+
+leg = ax.get_legend()
+
+for i in range(len(algos)):
+    leg.legendHandles[i].set_color('black')
+
+ax.set_xticks(ticks)
+ax.set_xticklabels(tick_labels)
+
+if use_log_scale:
+    ax.set_yscale('log')
+    ax.set_yticks([500, 600, 700, 800, 900, 1000, 2000, 3000])
+    ax.yaxis.set_major_formatter(get_naive_formatter())
+    ax.yaxis.set_minor_formatter(get_naive_formatter())
+
+ax.set_xlabel('logSync Interval')
+ax.set_ylabel('Standard Deviation (ns)')
+ax.grid(True)
+
+if generate_png:
+    plt.savefig(f'./line-stddev-logSync.png', bbox_inches="tight")
+else:
+    plt.savefig(f'./line-stddev-logSync.pgf',
+                format='pgf', bbox_inches="tight")
+
 plt.clf()
 # ---------------------------------------------------------------------------------------------------------------------------

@@ -3,6 +3,8 @@
 
 + `data/`
   + `data/measurements-e2e/` contains the unaltered data and artifacts for E2E
+  + `data/measurements-logSync-e2e/` contains the unaltered data and artifacts for the E2E logSync experiments
+  + `data/measurements-logSync-tc/` contains the unaltered data and artifacts for the TC logSync experiments
   + `data/measurements-p2p/` contains the unaltered data and artifacts for P2P
   + `data/measurements-residence/` contains the unaltered data and artifacts for the residence measurements
   + `data/measurements-tc/` contains the unaltered data and artifacts for TC
